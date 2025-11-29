@@ -95,7 +95,7 @@ export default function IdaVoltaPage() {
 
   // total de passageiros
   const totalPax =
-    Number(flight.adultos || 0) + Number(flight.criancas || 0) + Number(flight.bebes || 0);
+    Number(flight.adultos || 0) + Number(flight.criancas || 0);
 
   // bagagens por trecho
   const totalBagagemIda =
@@ -104,11 +104,12 @@ export default function IdaVoltaPage() {
     Number(flight.bagagemQuantidadeVolta || 0) * Number(flight.bagagemPrecoVolta || 0);
 
   // taxas (manual ou automática via aeroporto)
-  const taxaIda = getAirportTax(flight.idaAeroporto, flight.idaTaxaManual, flight.classificacao);
-  const taxaVolta =
-    flight.tipoviagem === "Ida e Volta"
-      ? getAirportTax(flight.voltaChegadaAeroporto, flight.voltaTaxaManual, flight.classificacao)
-      : 0;
+const taxaIda = getAirportTax(flight.idaAeroporto, flight.idaTaxaManual, flight.classificacao);
+
+const taxaVolta = flight.tipoviagem === "Ida e Volta"
+  ? getAirportTax(flight.voltaAeroporto, flight.voltaTaxaManual, flight.classificacao)
+  : 0;
+
 
   // ===== CÁLCULOS DAS MILHAS (USANDO MILHEIRO: /1000 * precoMilheiro * pax) =====
   const valorMilhasIda =
@@ -124,7 +125,10 @@ export default function IdaVoltaPage() {
       : 0;
 
   // totais por trecho
-  const totalIda = valorMilhasIda + Number(taxaIda || 0) + Number(totalBagagemIda || 0);
+ const totalIda = valorMilhasIda 
+  + Number(taxaIda || 0) 
+  + (Number(totalBagagemIda || 0) / 10);
+
   const totalVolta =
     flight.tipoviagem === "Ida e Volta" ? valorMilhasVolta + Number(taxaVolta || 0) + Number(totalBagagemVolta || 0) : 0;
 
@@ -173,103 +177,162 @@ useEffect(() => {
     });
   };
 
-  const generatePDF = async () => {
+ const gerarPDF = async () => {
+  try {
+    const doc = new jsPDF();
+
+    // Converter logo
+    let logoBase64 = null;
     try {
-      const doc = new jsPDF();
+      const candidate = logo && (logo.src || logo);
+      logoBase64 = await toBase64(candidate);
+    } catch (err) {
+      console.warn("Não foi possível converter logo para base64:", err);
+    }
 
-      // Converte a imagem (logo) para base64
-      let logoBase64 = null;
-      try {
-        const candidate = logo && (logo.src || logo);
-        logoBase64 = await toBase64(candidate);
-      } catch (err) {
-        console.warn("Não foi possível converter logo para base64:", err);
+    if (logoBase64) {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const imgWidth = 40;
+      const imgHeight = 30;
+      const imgX = (pageWidth - imgWidth) / 2;
+      doc.addImage(logoBase64, "PNG", imgX, 10, imgWidth, imgHeight);
+    }
+
+    let y = logoBase64 ? 50 : 20;
+
+    // Título
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Orçamento e Informações da sua viagem", 105, y, { align: "center" });
+
+    y += 12;
+    doc.setFontSize(12);
+
+    // Função para padronizar escrita com valor em negrito
+    const write = (label, value) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
       }
 
-      if (logoBase64) {
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const imgWidth = 40;
-        const imgHeight = 30;
-        const imgX = (pageWidth - imgWidth) / 2;
-        doc.addImage(logoBase64, "PNG", imgX, 10, imgWidth, imgHeight);
-      }
-
-      let y = logoBase64 ? 50 : 20;
-
-      // Título
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text("Orçamento e informações da viagem", 105, y, { align: "center" });
       doc.setFont("helvetica", "normal");
+      doc.text(`${label}: `, 15, y);
 
-      y += 12;
-      doc.setFontSize(12);
+      // Escrever valor em negrito logo após o texto anterior
+      const textWidth = doc.getTextWidth(`${label}: `);
+      doc.setFont("helvetica", "bold");
+      doc.text(String(value ?? "-"), 15 + textWidth, y);
 
-      const write = (label, value) => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(`${label}: ${value ?? "-"}`, 15, y);
-        y += 8;
-      };
+      y += 8;
+    };
 
-      // Dados gerais
-      write("Classificação", flight.classificacao);
-      write("Tipo de viagem", flight.tipoviagem);
-      write("Adultos", flight.adultos);
-      write("Crianças", flight.criancas);
-      write("Bebês", flight.bebes);
+    // Função para converter DATA para formato brasileiro
+    const toBRDate = (d) => {
+      if (!d) return "-";
+      const parts = d.split("-");
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    };
 
-      y += 4;
+    // Função para uppercase de aeroportos
+    const up = (txt) => (txt ? String(txt).toUpperCase() : "-");
 
-      // Ida
+    // Número de série (terra: incremento por ano)
+
+const currentYear = new Date().getFullYear();
+const serialKey = `serie_pdf_${currentYear}`;
+
+let stored = Number(localStorage.getItem(serialKey));
+
+
+if (!stored || stored < 999) {
+  stored = 999;
+}
+
+const serial = stored + 1;
+localStorage.setItem(serialKey, serial);
+
+const serialFormatted = `${String(serial).padStart(4, "0")}/${currentYear}`;
+
+
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+
+    // SERIAL NO PDF
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`Número de série: `, 15, y);
+    const sw = doc.getTextWidth("Número de série: ");
+    doc.setFont("helvetica", "bold");
+    doc.text(`${serial}/${currentYear}`, 15 + sw, y);
+    y += 10;
+
+    // Dados gerais
+    write("Classificação", flight.classificacao);
+    write("Tipo de viagem", flight.tipoviagem);
+    write("Adultos", flight.adultos);
+    write("Crianças", flight.criancas);
+    write("Bebês", flight.bebes);
+
+    y += 4;
+
+    // IDA
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Trecho: IDA", 15, y);
+    doc.setFont("helvetica", "normal");
+    y += 10;
+
+    write("Data ida", toBRDate(flight.idaData));
+    write("Hora ida", flight.idaHora);
+    write("Aeroporto origem (ida)", up(flight.idaAeroporto));
+    write("Aeroporto destino (ida)", up(flight.idaChegadaAeroporto));
+    write("Taxa ida (R$)", flight.idaTaxaManual !== "" ? flight.idaTaxaManual : taxaIda.toFixed(2));
+    write("Bagagens ida", `${flight.bagagemQuantidadeIda} x R$ ${flight.bagagemPrecoIda}`);
+    write("Valor (ida) R$", valorMilhasIda.toFixed(2));
+    write("Total ida R$", totalIda.toFixed(2));
+
+    // VOLTA
+    if (flight.tipoviagem === "Ida e Volta") {
+      y += 6;
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("Trecho: IDA", 15, y);
+      doc.text("Trecho: VOLTA", 15, y);
       doc.setFont("helvetica", "normal");
       y += 10;
 
-      write("Data ida", flight.idaData);
-      write("Hora ida", flight.idaHora);
-      write("Aeroporto origem (ida)", flight.idaAeroporto);
-      write("Aeroporto destino (ida)", flight.idaChegadaAeroporto);
-      write("Taxa ida (R$)", flight.idaTaxaManual !== "" ? flight.idaTaxaManual : taxaIda.toFixed(2));
-      write("Bagagens ida", `${flight.bagagemQuantidadeIda} x R$ ${flight.bagagemPrecoIda}`);
-      write("Valor milhas (ida) R$", valorMilhasIda.toFixed(2));
-      write("Total ida R$", totalIda.toFixed(2));
-
-      // Volta (se houver)
-      if (flight.tipoviagem === "Ida e Volta") {
-        y += 6;
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text("Trecho: VOLTA", 15, y);
-        doc.setFont("helvetica", "normal");
-        y += 10;
-
-        write("Data volta", flight.voltaData);
-        write("Hora volta", flight.voltaHora);
-        write("Aeroporto origem (volta)", flight.voltaAeroporto);
-        write("Aeroporto destino (volta)", flight.voltaChegadaAeroporto);
-        write("Taxa volta (R$)", flight.voltaTaxaManual !== "" ? flight.voltaTaxaManual : taxaVolta.toFixed(2));
-        write("Bagagens volta", `${flight.bagagemQuantidadeVolta} x R$ ${flight.bagagemPrecoVolta}`);
-        write("Valor milhas (volta) R$", valorMilhasVolta.toFixed(2));
-        write("Total volta R$", totalVolta.toFixed(2));
-      }
-
-      y += 8;
-      // Total geral
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Total geral: R$ ${totalGeral.toFixed(2)}`, 105, y, { align: "center" });
-
-      doc.save("orcamento_viagem.pdf");
-    } catch (err) {
-      console.error("Erro ao gerar PDF:", err);
-      alert("Ocorreu um erro ao gerar o PDF. Veja o console para mais detalhes.");
+      write("Data volta", toBRDate(flight.voltaData));
+      write("Hora volta", flight.voltaHora);
+      write("Aeroporto origem (volta)", up(flight.voltaAeroporto));
+      write("Aeroporto destino (volta)", up(flight.voltaChegadaAeroporto));
+      write("Taxa volta (R$)", flight.voltaTaxaManual !== "" ? flight.voltaTaxaManual : taxaVolta.toFixed(2));
+      write("Bagagens volta", `${flight.bagagemQuantidadeVolta} x R$ ${flight.bagagemPrecoVolta}`);
+      write("Valor (volta) R$", valorMilhasVolta.toFixed(2));
+      write("Total volta R$", totalVolta.toFixed(2));
     }
-  };
+
+    y += 10;
+
+    // Total geral (em destaque)
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total geral: R$ ${totalGeral.toFixed(2)}`, 105, y, { align: "center" });
+
+      y += 10;
+
+    // OBS
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const obs = "ATENÇÃO: Orçamento momentâneo. Verifique valores e condições antes do pagamento.";
+    doc.text(obs, pageWidth / 2, y, { align: "center" });
+
+    doc.save(`orcamento.informacoes_viagem_${serial}/${currentYear}.pdf`);
+  } catch (err) {
+    console.error("Erro ao gerar PDF:", err);
+    alert("Ocorreu um erro ao gerar o PDF. Veja o console para mais detalhes.");
+  }
+};
+
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8 rounded-xl shadow-lg">
@@ -582,7 +645,7 @@ useEffect(() => {
                 className="mt-1 p-2 rounded text-center border"
               />
               <span className="text-lg mt-1">
-               <p> Valor automático: </p>R$ {getAirportTax(flight.voltaChegadaAeroporto, "", flight.classificacao).toFixed(2)}
+               <p> Valor automático: </p>R$ {getAirportTax(flight.voltaAeroporto, "", flight.classificacao).toFixed(2)}
               </span>
             </label>
 
@@ -672,7 +735,7 @@ useEffect(() => {
       </div>
 
       <div>
-        <Button className="p-7" onClick={generatePDF}><p className="font-bold text-xl">Gerar PDF</p></Button>
+        <Button className="p-7" onClick={gerarPDF}><p className="font-bold text-xl">Gerar PDF</p></Button>
       </div>
     </div>
   );
