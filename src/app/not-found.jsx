@@ -1,11 +1,19 @@
+"use client";
+
+import { Button } from "./components/ui/button";
+import { Navigation } from "lucide-react";
+import { useRouter } from "next/navigation";
+
 export default function NotFound() {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col items-center justify-center h-screen text-center px-6 bg-background text-foreground">
       {/* Imagem */}
       <img
         src="/logo.png"
         alt="Logo da empresa"
-        className="w-32 h-auto m-30"
+        className="w-32 h-auto m-10 rounded"
       />
 
       {/* Texto principal */}
@@ -16,12 +24,12 @@ export default function NotFound() {
       </p>
 
       {/* Botão de voltar */}
-      <a
-        href="/"
-        className="mt-6 px-6 py-3 rounded-2xl bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors duration-200"
+      <Button
+        onClick={() => router.push("/")}
+        className="mt-6 px-6 p-6 py-3 rounded-2xl text-lg font-semibold hover:bg-blue-600 transition-colors duration-200"
       >
-        Voltar para a página inicial
-      </a>
+        <p className="p-5">Voltar para a página inicial</p>
+      </Button>
     </div>
   );
 }

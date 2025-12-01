@@ -22,7 +22,7 @@ export function AppSidebar({ ...props }) {
   const data = {
     navegacao: [
       { name: "Ida/volta", url: "/ida.volta" },
-      { name: "Pagamento", url: "/pagamento" },
+      { name: "Parcelamento", url: "/parcelamento" },
     ],
   }
 

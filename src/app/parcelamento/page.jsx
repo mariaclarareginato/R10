@@ -159,176 +159,200 @@ export default function ParcelamentoPage() {
     };
   };
 
-  // PDF
 const gerarPDF = async () => {
   try {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 26;
+    let y = margin;
 
-    // LOGO
-    let logoBase64 = null;
-    try {
-      const candidate = logo && (logo.src || logo);
-      logoBase64 = await toBase64(candidate);
-    } catch (err) {
-      console.warn("Não foi possível converter logo:", err);
-    }
-
-    if (logoBase64) {
-      const imgWidth = 40;
-      const imgHeight = 30;
-      const imgX = (pageWidth - imgWidth) / 2;
-      doc.addImage(logoBase64, "PNG", imgX, 10, imgWidth, imgHeight);
-    }
-
-    // NUMERO DE SÉRIE
+    // Funções utilitárias
     const up = (txt) => (txt ? String(txt).toUpperCase() : "-");
-
-    // Número de série (terra: incremento por ano)
-
-    const currentYear = new Date().getFullYear();
-    const serialKey = `serie_pdf_${currentYear}`;
-
-     let stored = Number(localStorage.getItem(serialKey));
-
-
-     if (!stored || stored < 999) {
-     stored = 999;
-        }
-
-       const serial = stored + 1;
-          localStorage.setItem(serialKey, serial);
-
-         const serialFormatted = `${String(serial).padStart(4, "0")}/${currentYear}`;
-
-         let y = logoBase64 ? 50 : 25;
-
-    // TÍTULO
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text(
-      "Orçamento e informações da sua viagem",
-      pageWidth / 2,
-      y,
-      { align: "center" }
-    );
-
-    // Número de série alinhado com o título
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("Número de série:", pageWidth - 60, y - 10);
-    doc.setFont("helvetica", "bold");
-    doc.text(serialFormatted, pageWidth - 15, y - 10, { align: "right" });
-
-    y += 12;
-
-    // FUNÇÃO WRITE CORRIGIDA
-    const write = (label, value) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-
-      const textLabel = `${label}: `;
-      doc.text(textLabel, 15, y);
-      const labelWidth = doc.getTextWidth(textLabel);
-
-      doc.setFont("helvetica", "bold");
-      doc.text(` ${String(value ?? "-")}`, 15 + labelWidth, y);
-      y += 7;
-    };
+    const money = (n) => `R$ ${(Number(n) || 0).toFixed(2)}`;
+    const toBRDate = (d) => d ? d.split("-").reverse().join("/") : "-";
 
     const details = computeDetails(flight);
 
-    // DADOS GERAIS
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Dados do Passageiro e Informações Gerais", 15, y);
-    y += 10;
+    // Converter logo
+    let logoBase64 = null;
+    try {
+      const candidate = (logo && (logo.src || logo)) || "/logo.png";
+      logoBase64 = await toBase64(candidate);
+    } catch (err) {}
 
-    write("Classificação", up(flight?.classificacao));
-    write("Tipo de viagem", flight?.tipoviagem);
-    write("Adultos", flight?.adultos);
-    write("Crianças", flight?.criancas);
-    write("Bebês", flight?.bebes);
-    write("Total de passageiros", details?.totalPax);
-
-    y += 8;
-
-    // IDA
-    doc.setFont("helvetica", "bold");
-    doc.text("Trecho: IDA", 15, y);
-    y += 9;
-
-    write("Data ida", toBRDate(flight?.idaData));
-    write("Hora ida", flight?.idaHora);
-    write("Origem (IDA)", up(flight?.idaAeroporto));
-    write("Destino (IDA)", up(flight?.idaChegadaAeroporto));
-    write("Taxa (IDA)", money(details?.taxaIda));
-    write("Bagagens (IDA)", `${flight?.bagagemQuantidadeIda} x R$ ${Number(flight?.bagagemPrecoIda).toFixed(2)}`);
-    write("Milhas (IDA) - custo", money(details?.valorMilhasIda));
-    write("Total (IDA)", money(details?.totalIda));
-
-    y += 9;
-
-    // VOLTA
-    if (flight?.tipoviagem === "Ida e Volta") {
-      doc.setFont("helvetica", "bold");
-      doc.text("Trecho: VOLTA", 15, y);
-      y += 9;
-
-      write("Data volta", toBRDate(flight?.voltaData));
-      write("Hora volta", flight?.voltaHora);
-      write("Origem (VOLTA)", up(flight?.voltaAeroporto));
-      write("Destino (VOLTA)", up(flight?.voltaChegadaAeroporto));
-      write("Taxa (VOLTA)", money(details?.taxaVolta));
-      write("Bagagens (VOLTA)", `${flight?.bagagemQuantidadeVolta} x R$ ${Number(flight?.bagagemPrecoVolta).toFixed(2)}`);
-      write("Milhas (VOLTA) - custo", money(details?.valorMilhasVolta));
-      write("Total (VOLTA)", money(details?.totalVolta));
+    if (logoBase64) {
+      const w = 65, h = 50;
+      doc.addImage(logoBase64, "PNG", (pageWidth - w) / 2, y, w, h);
+      y += h + 6;
     }
 
-  
+// --- Número de série
+const year = new Date().getFullYear();
+const key = `serie_pdf_${year}`;
+let stored = Number(localStorage.getItem(key)) || 999;
+const serial = stored + 1;
+localStorage.setItem(key, serial);
+const serialFormatted = `${String(serial).padStart(4, "0")}/${year}`;
 
-    // RESUMO FINANCEIRO AGRUPADO ✔
 
-    doc.addPage();
-    y = 20;
+doc.setFontSize(10);
 
-    doc.setFontSize(12);
+
+const rightX = pageWidth - margin;
+
+
+doc.setFont("helvetica", "bold");
+doc.text(serialFormatted, rightX, y, { align: "right" });
+
+
+const serialWidth = doc.getTextWidth(serialFormatted);
+const gap = 8; // espaço entre label e serial
+doc.setFont("helvetica", "normal");
+doc.text("Número de série:", rightX - serialWidth - gap, y, { align: "right" });
+
+
+y += 14;
+
+
+    // Título
+    doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    
-    doc.text("Resumo Financeiro", 15, y);
+    doc.text("Orçamento e Informações da Viagem", pageWidth / 2, y, {
+      align: "center",
+    });
+
+    y += 18;
+
+    // Separador
+    const sep = () => {
+      doc.setDrawColor(180);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
+    };
+
+    // Função para escrever rótulo + valor
+    const line = (label, value) => {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${label}:`, margin, y);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${value}`, margin + 120, y);
+      y += 11;
+    };
+
+    // Informações gerais
+
+    y += 20;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Informações gerais do Voo", margin, y);
+    y += 10; sep();
+
+
     y += 10;
 
-    write("Total", money(valorComTaxa));
-    write("Parcelas escolhidas", `${parcelas}x`);
-    write("Valor por parcela", money(valorParcela));
-
-    y += 12;
-
-    // OBS
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    const obs = "ATENÇÃO: Orçamento momentâneo. Verifique valores e condições antes do pagamento.";
-    doc.text(doc.splitTextToSize(obs, pageWidth - 30), 15, y);
-
+    line("Classificação", up(flight.classificacao));
+    line("Tipo de viagem", flight.tipoviagem);
+    line("Adultos", flight.adultos);
+    line("Crianças", flight.criancas);
+    line("Bebês", flight.bebes);
     
 
-    // SAVE
-    doc.save(`orcamento.informacoes_viagem_${serial}/${currentYear}.pdf`);
+    y += 10;
 
+
+    // Ida
+
+    y += 20;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Trecho: IDA", margin, y);
+    y += 10; sep();
+
+    y += 10;
+
+    line("Data", toBRDate(flight.idaData));
+    line("Horário do embarque", flight.idaEmbarqueHora);
+    line("Horário da chegada", flight.idaChegadaHora);
+    line("Aeroporto de origem", up(flight.idaAeroporto));
+    line("Aeroporto de destino", up(flight.idaChegadaAeroporto));
+    line("Taxa do aeroporto (R$)", money(details.taxaIda));
+    line("Bagagens",
+      `${flight.bagagemQuantidadeIda} x ${money(flight.bagagemPrecoIda)}`
+    );
+    line("Valor (R$)", money(details.valorMilhasIda));
+    line("Total (R$)", money(details.totalIda));
+
+    if (flight.tipoviagem === "Ida e Volta") {
+
+    y += 10;
+
+
+    // Volta
+
+
+      y += 20;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Trecho: VOLTA", margin, y);
+      y += 10; sep();
+
+      y += 10;
+
+      line("Data", toBRDate(flight.voltaData));
+      line("Horário do embarque", flight.voltaEmbarqueHora);
+      line("Horário da hegada", flight.voltaChegadaHora);
+      line("Aeroporto de origem", up(flight.voltaAeroporto));
+      line("Aeroporto de destino", up(flight.voltaChegadaAeroporto));
+      line("Taxa do aeroporto (R$)", money(details.taxaVolta));
+      line("Bagagens",
+        `${flight.bagagemQuantidadeVolta} x ${money(flight.bagagemPrecoVolta)}`
+      );
+      line("Valor (R$)", money(details.valorMilhasVolta));
+      line("Total (R$)", money(details.totalVolta));
+    }
+
+    y += 10;
+
+
+    // Resumo financeiro 
+
+    y += 20;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resumo financeiro", margin, y);
+    y += 10; sep();
+
+    y += 10;
+
+    line("Valor Total (R$)", money(details.totalGeral));
+    line("Parcelas", `${parcelas}x`);
+    line("Valor por Parcela (R$)", money(valorParcela));
+
+    y += 10;
+
+    // OBS Centralizado
+
+    y += 20;
+    const obs = "Aviso importante sobre preços dinâmicos: Os valores apresentados neste orçamento estão sujeitos à variação de acordo com disponibilidade, demanda, políticas das companhias aéreas e hotéis, além de possíveis alterações cambiais. Como se tratam de preços dinâmicos, o valor final somente será confirmado no momento da emissão da passagem aérea ou da reserva da hospedagem. Recomenda-se confirmar a compra o quanto antes para garantir as tarifas informadas.";
+
+    doc.setFont("helvetica", "normal");
+    const obsLines = doc.splitTextToSize(obs, pageWidth - margin * 2);
+    doc.text(obsLines, pageWidth / 2, y, { align: "center" });
+
+    // Nome do arquivo
+    const fileName = `informacoes.orcamento_viagem_${serialFormatted}.pdf`;
+    doc.save(fileName);
   } catch (err) {
     console.error("Erro ao gerar PDF:", err);
-    alert("Erro ao gerar PDF, veja o console");
   }
 };
 
 
   return (
     <div className="p-6 max-w-3xl mx-auto rounded-xl space-y-5">
-      <h2 className="text-3xl md:text-4xl font-bold p-5">Parcelamento do Pagamento</h2>
+      <h2 className="text-3xl md:text-4xl font-bold p-5">Parcelamento $</h2>
 
       <p className="text-lg font-semibold">
         Valor total: <strong className="font-extrabold text-2xl">R$ {total.toFixed(2)}</strong>
@@ -337,8 +361,8 @@ const gerarPDF = async () => {
       <div className="space-y-2">
         <label className="text-lg font-semibold">Método de Pagamento:</label>
         <select className="p-2 text-2xl font-extrabold rounded" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-          <option className="bg-gray-200 text-gray-700 text-lg font-semibold" value="link">Link</option>
-          <option className="bg-gray-200 text-gray-700 text-lg font-semibold" value="maquina">Maquininha</option>
+          <option className="bg-gray-400 text-gray-900 text-lg font-bold" value="link">Link</option>
+          <option className="bg-gray-400 text-gray-900 text-lg font-bold" value="maquina">Maquininha</option>
         </select>
       </div>
 
@@ -346,7 +370,7 @@ const gerarPDF = async () => {
         <label className="text-lg font-semibold">Parcelas:</label>
         <select className="p-2 text-2xl font-extrabold rounded" value={parcelas} onChange={(e) => setParcelas(Number(e.target.value))}>
           {taxas.map((t) => (
-            <option className="bg-gray-200 text-gray-700 text-lg font-semibold" key={t.p} value={t.p}>
+            <option className="bg-gray-400 text-gray-900 text-lg font-bold" key={t.p} value={t.p}>
               {t.p}x
             </option>
           ))}
@@ -365,9 +389,11 @@ const gerarPDF = async () => {
         </p>
       </div>
 
-      <Button className="p-7" onClick={gerarPDF}>
-        <p className="font-bold text-xl">Gerar PDF</p>
-      </Button>
+      <div className="pt-2">
+        <Button className="p-7" onClick={gerarPDF}>
+          <p className="font-extrabold text-xl">Gerar PDF</p>
+        </Button>
+      </div>
     </div>
   );
 }
