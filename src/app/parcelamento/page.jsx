@@ -218,7 +218,7 @@ y += 14;
     // Título
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Orçamento e Informações da Viagem", pageWidth / 2, y, {
+    doc.text("Orçamento e informações da Viagem", pageWidth / 2, y, {
       align: "center",
     });
 

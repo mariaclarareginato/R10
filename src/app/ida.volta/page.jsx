@@ -48,37 +48,42 @@ export default function IdaVoltaPage() {
   });
 
   const [airportRates] = useState([
-    { code: "GRU", nacional: 32, internacional: 150 },
-    { code: "CGH", nacional: 40, internacional: 120 },
-    { code: "VCP", nacional: 40, internacional: 120 },
-    { code: "GIG", nacional: 40, internacional: 120 },
-    { code: "SDU", nacional: 30, internacional: 100 },
-    { code: "BSB", nacional: 35, internacional: 110 },
-    { code: "SSA", nacional: 30, internacional: 100 },
-    { code: "REC", nacional: 30, internacional: 100 },
-    { code: "FOR", nacional: 50, internacional: 90 },
-    { code: "BEL", nacional: 25, internacional: 90 },
-    { code: "POA", nacional: 25, internacional: 90 },
-    { code: "CWB", nacional: 25, internacional: 90 },
-    { code: "NAT", nacional: 20, internacional: 80 },
-    { code: "MAO", nacional: 20, internacional: 80 },
-    { code: "FLN", nacional: 20, internacional: 80 },
-    { code: "CGB", nacional: 20, internacional: 80 },
-    { code: "VIX", nacional: 20, internacional: 80 },
-    { code: "JOI", nacional: 20, internacional: 80 },
-    { code: "MCZ", nacional: 20, internacional: 80 },
-    { code: "JFK", nacional: 0, internacional: 300 },
-    { code: "LHR", nacional: 0, internacional: 350 },
-    { code: "CDG", nacional: 0, internacional: 320 },
-    { code: "FRA", nacional: 0, internacional: 330 },
-    { code: "MAD", nacional: 0, internacional: 310 },
-    { code: "MIA", nacional: 0, internacional: 300 },
-    { code: "SFO", nacional: 0, internacional: 300 },
-    { code: "DXB", nacional: 0, internacional: 400 },
-    { code: "HND", nacional: 0, internacional: 380 },
-    { code: "SIN", nacional: 0, internacional: 380 },
-    { code: "YYZ", nacional: 0, internacional: 290 },
-    { code: "EZE", nacional: 0, internacional: 270 },
+  
+  { code: "BEL", nacional: 25, internacional: 90 },
+  { code: "BSB", nacional: 35, internacional: 110 },
+  { code: "CDG", nacional: 0, internacional: 320 },
+  { code: "CGB", nacional: 20, internacional: 80 },
+  { code: "CGH", nacional: 60.62, internacional: 120 },
+  { code: "CNF", nacional: 33.56, internacional: 120 },
+  { code: "CWB", nacional: 25, internacional: 90 },
+  { code: "DXB", nacional: 0, internacional: 400 },
+  { code: "EZE", nacional: 0, internacional: 270 },
+  { code: "FLN", nacional: 20, internacional: 80 },
+  { code: "FOR", nacional: 50, internacional: 90 },
+  { code: "FRA", nacional: 0, internacional: 330 },
+  { code: "GIG", nacional: 40, internacional: 120 },
+  { code: "GRU", nacional: 33.64, internacional: 150 },
+  { code: "HND", nacional: 0, internacional: 380 },
+  { code: "IGU", nacional: 42.10, internacional: 120 },
+  { code: "JFK", nacional: 0, internacional: 300 },
+  { code: "JOI", nacional: 20, internacional: 80 },
+  { code: "LHR", nacional: 0, internacional: 350 },
+  { code: "MAD", nacional: 0, internacional: 310 },
+  { code: "MAO", nacional: 20, internacional: 80 },
+  { code: "MCZ", nacional: 20, internacional: 80 },
+  { code: "MIA", nacional: 0, internacional: 300 },
+  { code: "NAT", nacional: 20, internacional: 80 },
+  { code: "POA", nacional: 25, internacional: 90 },
+  { code: "REC", nacional: 30, internacional: 100 },
+  { code: "SDU", nacional: 30, internacional: 100 },
+  { code: "SFO", nacional: 0, internacional: 300 },
+  { code: "SIN", nacional: 0, internacional: 380 },
+  { code: "SSA", nacional: 30, internacional: 100 },
+  { code: "VCP", nacional: 40, internacional: 120 },
+  { code: "VIX", nacional: 20, internacional: 80 },
+  { code: "YYZ", nacional: 0, internacional: 290 }
+
+
   ]);
 
   const handleChange = (e) => {
@@ -441,7 +446,9 @@ const gerarPDF = async () => {
         <label className="flex flex-col text-lg font-bold">
           Taxa (ida):
           <input type="number" name="idaTaxaManual" value={flight.idaTaxaManual} onChange={handleChange} className="mt-1 p-2 rounded text-center border" />
-          <span className="text-lg mt-1">Valor automático: R$ {getAirportTax(flight.idaAeroporto, "", flight.classificacao).toFixed(2)}</span>
+          <span className="text-lg mt-1">Valor automático: 
+            <br></br>
+            R$ {getAirportTax(flight.idaAeroporto, "", flight.classificacao).toFixed(2)}</span>
         </label>
 
         <label className="flex text-lg font-bold flex-col">
@@ -525,7 +532,9 @@ const gerarPDF = async () => {
             <label className="flex text-lg font-bold flex-col">
               Taxa (volta):
               <input type="number" name="voltaTaxaManual" value={flight.voltaTaxaManual} onChange={handleChange} className="mt-1 p-2 rounded text-center border" />
-              <span className="text-lg font-bold mt-1">Valor automático: R$ {getAirportTax(flight.voltaAeroporto, "", flight.classificacao).toFixed(2)}</span>
+              <span className="text-lg font-bold mt-1">Valor automático: 
+                <br></br>
+                R$ {getAirportTax(flight.voltaAeroporto, "", flight.classificacao).toFixed(2)}</span>
             </label>
 
             <label className="flex text-lg font-bold  flex-col">

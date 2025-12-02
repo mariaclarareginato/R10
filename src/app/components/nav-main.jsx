@@ -18,10 +18,10 @@ export function NavMain({ items }) {
               <SidebarMenuButton asChild tooltip={item.name}>
                 <a
                   href={item.url}
-                  className="text-xl font-semibold px-3 py-2 flex items-center gap-2 mt-3"
+                  className="text-xl font-semibold px-3 py-7 flex gap-4"
                 >
                   {item.icon && <item.icon className="w-5 h-5" />}
-                  <span>{item.name}</span>
+                  <span className="text-2xl font-bold px-3 py-3 flex gap-4">{item.name}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>

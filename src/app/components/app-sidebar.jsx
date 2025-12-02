@@ -40,8 +40,8 @@ export function AppSidebar({ ...props }) {
       </SidebarHeader>
 
       {/* Conteúdo da Sidebar */}
-      <SidebarContent className="font-semibold text-lg">
-        <NavMain items={data.navegacao} />
+      <SidebarContent className="font-semibold gap-4 flex text-lg">
+        <NavMain  items={data.navegacao} />
       </SidebarContent>
     </Sidebar>
   )
