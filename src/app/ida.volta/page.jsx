@@ -125,7 +125,7 @@ export default function IdaVoltaPage() {
       : 0;
 
   // ===== CÁLCULOS DAS MILHAS (USANDO MILHEIRO: /1000 * precoMilheiro * pax) =====
-  // Corrigi para usar milheiro (divisão por 1000). Mantive a fórmula simples.
+  
   const valorMilhasIda =
     (Number(flight.milhasPorPassageiroIda || 0)) * Number(flight.precoMilheiroIda || 0) * totalPax;
 
@@ -137,10 +137,10 @@ export default function IdaVoltaPage() {
       : 0;
 
   // totais por trecho
-  const totalIda = valorMilhasIda + Number(taxaIda || 0) + Number(totalBagagemIda || 0);
+  const totalIda = valorMilhasIda  + Number(taxaIda * totalPax|| 0) + Number(totalBagagemIda || 0) ;
 
   const totalVolta =
-    flight.tipoviagem === "Ida e Volta" ? valorMilhasVolta + Number(taxaVolta || 0) + Number(totalBagagemVolta || 0) : 0;
+    flight.tipoviagem === "Ida e Volta" ? valorMilhasVolta + Number(taxaVolta * totalPax|| 0) + Number(totalBagagemVolta || 0) : 0 ;
 
   const totalGeral = totalIda + totalVolta;
 
@@ -293,7 +293,7 @@ const gerarPDF = async () => {
     write("Horário da chegada", flight.idaChegadaHora);
     write("Aeroporto de origem", flight.idaAeroporto?.toUpperCase());
     write("Aeroporto de destino", flight.idaChegadaAeroporto?.toUpperCase());
-    write("Taxa do aeroporto (R$)", Number(taxaIda || 0).toFixed(2));
+    write("Taxa de embarque (R$)", Number(taxaIda || 0).toFixed(2));
     write("Bagagens", `${flight.bagagemQuantidadeIda} x R$ ${Number(flight.bagagemPrecoIda || 0).toFixed(2)}`);
     write("Valor (R$)", valorMilhasIda.toFixed(2));
     write("Total (R$)", totalIda.toFixed(2));
@@ -311,7 +311,7 @@ const gerarPDF = async () => {
       write("Horário da chegada", flight.voltaChegadaHora);
       write("Aeroporto de origem", flight.voltaAeroporto?.toUpperCase());
       write("Aeroporto de destino", flight.voltaChegadaAeroporto?.toUpperCase());
-      write("Taxa do aeroporto (R$)", Number(taxaVolta || 0).toFixed(2));
+      write("Taxa de embarque (R$)", Number(taxaVolta || 0).toFixed(2));
       write("Bagagens", `${flight.bagagemQuantidadeVolta} x R$ ${Number(flight.bagagemPrecoVolta || 0).toFixed(2)}`);
       write("Valor (R$)", valorMilhasVolta.toFixed(2));
       write("Total (R$)", totalVolta.toFixed(2));
